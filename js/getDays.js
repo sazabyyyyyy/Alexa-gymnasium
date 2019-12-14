@@ -16,13 +16,16 @@ async function test() {
     });
 
 
+
     //要素取得
     const tables=await page.$$('.even');
+    let date;
 
     for(const table of tables){
         const data = await table.$('.data');
         date = await (await data.getProperty('textContent')).jsonValue();
     }
+
 
     //Chromunium終了
     await page.close();

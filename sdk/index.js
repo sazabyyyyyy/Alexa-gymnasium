@@ -1,3 +1,46 @@
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
+let result = null;
+
+exports.handler = async (event, context) => {
+    let browser = null;
+
+    try {
+        browser = await puppeteer.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath,
+            headless: chromium.headless,
+        });
+
+        let page = await browser.newPage();
+
+        await page.goto(event.url || 'https://www.shsf.jp/chuo-g');
+
+        //要素取得
+        const tables=await page.$$('.even');
+        let date;
+
+        for(const table of tables){
+            const data = await table.$('.data');
+            date = await (await data.getProperty('textContent')).jsonValue();
+        }
+
+        result = date;
+
+        // result = await page.title();
+    } catch (error) {
+        return context.fail(error);
+    } finally {
+        if (browser !== null) {
+            await browser.close();
+        }
+    }
+
+    // return context.succeed(result);
+};
+
+
 // This sample demonstrates handling intents from an Alexa skill using the Alexa Skills Kit SDK (v2).
 // Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
 // session persistence, api calls, and more.
@@ -26,7 +69,8 @@ const GymIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GymIntent';
     },
     handle(handlerInput) {
-        const speakOutput = '29日、1〜3日です。';
+        const speakOutput = result;
+        // const speakOutput = "29日です";
         return handlerInput.responseBuilder
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
